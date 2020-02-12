@@ -59,6 +59,7 @@ public interface EvidenceService {
      * @param weIdPrivateKey the signer WeID's private key - must belong to one of the signers
      * @return evidence address. Return empty string if failed due to any reason.
      */
+    @Deprecated
     ResponseData<String> createEvidence(Hashable object, List<String> signers,
         WeIdPrivateKey weIdPrivateKey);
 
@@ -72,6 +73,7 @@ public interface EvidenceService {
      * @param weIdPrivateKey the signer WeID's private key
      * @return true if succeed, false otherwise
      */
+    @Deprecated
     ResponseData<Boolean> addSignature(Hashable object, String evidenceAddress,
         WeIdPrivateKey weIdPrivateKey);
 
@@ -91,10 +93,10 @@ public interface EvidenceService {
     /**
      * Get the evidence from blockchain.
      *
-     * @param evidenceAddress the evidence address on chain
+     * @param evidenceKey the evidence address on chain
      * @return The EvidenceInfo
      */
-    ResponseData<EvidenceInfo> getEvidence(String evidenceAddress);
+    ResponseData<EvidenceInfo> getEvidence(String evidenceKey);
 
     /**
      * Verify an object based against the provided Evidence info. Supports following types of input:
@@ -102,10 +104,10 @@ public interface EvidenceService {
      * the listed signatures against its singers.
      *
      * @param object the given Java object
-     * @param evidenceAddress the evidence address to be verified
+     * @param evidenceKey the evidence key to be verified
      * @return true if succeeds, false otherwise
      */
-    ResponseData<Boolean> verify(Hashable object, String evidenceAddress);
+    ResponseData<Boolean> verify(Hashable object, String evidenceKey);
 
     /**
      * Generate hash value of any passed-in param.
@@ -115,4 +117,13 @@ public interface EvidenceService {
      * @return the hash string
      */
     <T> ResponseData<HashString> generateHash(T object);
+
+    /**
+     * Validate whether an evidence is signed by this WeID.
+     *
+     * @param evidenceKey the evidence key - can be hash, address, or UUID
+     * @param weId the WeID
+     * @return true if yes, false otherwise
+     */
+    ResponseData<Boolean> validateSigner(String evidenceKey, String weId);
 }

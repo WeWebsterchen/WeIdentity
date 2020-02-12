@@ -376,17 +376,17 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
     /**
      * Get the evidence from blockchain.
      *
-     * @param evidenceAddress the evidence address on chain
+     * @param evidenceKey the evidence address on chain
      * @return The EvidenceInfo
      */
     @Override
-    public ResponseData<EvidenceInfo> getEvidence(String evidenceAddress) {
-        if (StringUtils.isEmpty(evidenceAddress) || !WeIdUtils.isValidAddress(evidenceAddress)) {
+    public ResponseData<EvidenceInfo> getEvidence(String evidenceKey) {
+        if (StringUtils.isEmpty(evidenceKey) || !WeIdUtils.isValidAddress(evidenceKey)) {
             logger.error("Evidence argument illegal input: address. ");
             return new ResponseData<>(null, ErrorCode.ILLEGAL_INPUT);
         }
         try {
-            ResponseData<EvidenceInfo> resp = evidenceServiceEngine.getInfo(evidenceAddress);
+            ResponseData<EvidenceInfo> resp = evidenceServiceEngine.getInfo(evidenceKey);
             if (resp.getResult().getCredentialHash().equalsIgnoreCase(WeIdConstant.HEX_PREFIX)) {
                 resp.getResult().setCredentialHash(StringUtils.EMPTY);
             }
@@ -419,17 +419,17 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
      * Verify a Credential based on the provided Evidence info.
      *
      * @param object the given Java object
-     * @param evidenceAddress the evidence address
+     * @param evidenceKey the evidence address
      * @return true if succeeds, false otherwise
      */
     @Override
-    public ResponseData<Boolean> verify(Hashable object, String evidenceAddress) {
+    public ResponseData<Boolean> verify(Hashable object, String evidenceKey) {
         ResponseData<String> hashResp = getHashValue(object);
         if (StringUtils.isEmpty(hashResp.getResult())) {
             return new ResponseData<>(false, hashResp.getErrorCode(),
                 hashResp.getErrorMessage());
         }
-        return verify(hashResp.getResult(), evidenceAddress);
+        return verify(hashResp.getResult(), evidenceKey);
     }
 
     private ResponseData<EvidenceInfo> verifyAndGetEvidenceFromChain(String evidenceAddress) {
