@@ -40,4 +40,9 @@ public class EvidenceSignInfo {
      * The timestamp at which this evidence is signed.
      */
     private String timestamp;
+
+    /**
+     * The extra value this signer records on chain.
+     */
+    private String extraValue;
 }

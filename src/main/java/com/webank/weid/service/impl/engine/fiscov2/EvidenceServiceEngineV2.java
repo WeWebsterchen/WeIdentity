@@ -42,6 +42,7 @@ import com.webank.weid.contract.v2.Evidence.AddSignatureLogEventResponse;
 import com.webank.weid.contract.v2.EvidenceFactory;
 import com.webank.weid.contract.v2.EvidenceFactory.CreateEvidenceLogEventResponse;
 import com.webank.weid.protocol.base.EvidenceInfo;
+import com.webank.weid.protocol.base.EvidenceSignInfo;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.protocol.response.TransactionInfo;
 import com.webank.weid.service.impl.engine.BaseEngine;
@@ -265,7 +266,6 @@ public class EvidenceServiceEngineV2 extends BaseEngine implements EvidenceServi
             for (String addr : issuerList) {
                 signerStringList.add(WeIdUtils.convertAddressToWeId(addr));
             }
-            evidenceInfoData.setSigners(signerStringList);
 
             List<String> signaturesList = new ArrayList<>();
             List<byte[]> rlist = rawResult.getValue3();
@@ -292,7 +292,12 @@ public class EvidenceServiceEngineV2 extends BaseEngine implements EvidenceServi
                     )
                 );
             }
-            evidenceInfoData.setSignatures(signaturesList);
+            for (int index = 0; index < signerStringList.size(); index++) {
+                EvidenceSignInfo signInfo = new EvidenceSignInfo();
+                signInfo.setSignature(signaturesList.get(index));
+                // TODO add timestamp here
+                evidenceInfoData.getSignInfo().put(signerStringList.get(index), signInfo);
+            }
             return new ResponseData<>(evidenceInfoData, ErrorCode.SUCCESS);
         } catch (Exception e) {
             logger.error("get evidence failed.", e);

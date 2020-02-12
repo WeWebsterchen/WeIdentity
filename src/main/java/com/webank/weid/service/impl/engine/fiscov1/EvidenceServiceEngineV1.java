@@ -50,6 +50,7 @@ import com.webank.weid.contract.v1.Evidence.AddSignatureLogEventResponse;
 import com.webank.weid.contract.v1.EvidenceFactory;
 import com.webank.weid.contract.v1.EvidenceFactory.CreateEvidenceLogEventResponse;
 import com.webank.weid.protocol.base.EvidenceInfo;
+import com.webank.weid.protocol.base.EvidenceSignInfo;
 import com.webank.weid.protocol.response.ResponseData;
 import com.webank.weid.protocol.response.TransactionInfo;
 import com.webank.weid.service.impl.engine.BaseEngine;
@@ -286,11 +287,11 @@ public class EvidenceServiceEngineV1 extends BaseEngine implements EvidenceServi
                         .bytes32ToString(credentialHashList.get(0))
                         + DataToolUtils.bytes32ToString(credentialHashList.get(1)));
             }
+
             List<String> signerStringList = new ArrayList<>();
             for (Address addr : issuerList) {
                 signerStringList.add(WeIdUtils.convertAddressToWeId(addr.toString()));
             }
-            evidenceInfoData.setSigners(signerStringList);
 
             List<String> signaturesList = new ArrayList<>();
             List<Bytes32> rlist = ((DynamicArray<Bytes32>) rawResult.get(2)).getValue();
@@ -317,7 +318,13 @@ public class EvidenceServiceEngineV1 extends BaseEngine implements EvidenceServi
                     )
                 );
             }
-            evidenceInfoData.setSignatures(signaturesList);
+
+            for (int index = 0; index < signerStringList.size(); index++) {
+                EvidenceSignInfo signInfo = new EvidenceSignInfo();
+                signInfo.setSignature(signaturesList.get(index));
+                // TODO add timestamp here
+                evidenceInfoData.getSignInfo().put(signerStringList.get(index), signInfo);
+            }
             return new ResponseData<>(evidenceInfoData, ErrorCode.SUCCESS);
         } catch (TimeoutException e) {
             logger.error("create evidence failed due to system timeout. ", e);

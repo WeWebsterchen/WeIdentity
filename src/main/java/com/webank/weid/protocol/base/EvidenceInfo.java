@@ -20,6 +20,7 @@
 package com.webank.weid.protocol.base;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +42,7 @@ public class EvidenceInfo {
     /**
      * Required: sign info mapping (key: signer WeID, value: evidenceSignInfo).
      */
-    private Map<String, EvidenceSignInfo> signInfo;
+    private Map<String, EvidenceSignInfo> signInfo = new HashMap<>();
 
     /**
      * Optional: Referring Credential ID.
@@ -85,5 +86,18 @@ public class EvidenceInfo {
             timestamps.add(entry.getValue().getTimestamp());
         }
         return timestamps;
+    }
+
+    /**
+     * Get all extra values info.
+     *
+     * @return extra info list
+     */
+    public List<String> getExtraValues() {
+        List<String> extraValues = new ArrayList<>();
+        for (Map.Entry<String, EvidenceSignInfo> entry : signInfo.entrySet()) {
+            extraValues.add(entry.getValue().getExtraValue());
+        }
+        return extraValues;
     }
 }
