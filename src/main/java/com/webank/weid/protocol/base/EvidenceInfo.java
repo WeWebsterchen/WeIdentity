@@ -47,4 +47,14 @@ public class EvidenceInfo {
      * r, s, v.
      */
     private List<String> signatures;
+
+    /**
+     * Create/Update timestamp.
+     */
+    private List<String> timestamp;
+
+    /**
+     * Referring Credential ID.
+     */
+    private String credentialId;
 }
