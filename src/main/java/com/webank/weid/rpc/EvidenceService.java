@@ -49,7 +49,7 @@ public interface EvidenceService {
     /**
      * Get the evidence from blockchain.
      *
-     * @param evidenceKey the evidence address on chain
+     * @param evidenceKey the evidence address (legacy), or hash, on chain
      * @return The EvidenceInfo
      */
     ResponseData<EvidenceInfo> getEvidence(String evidenceKey);
