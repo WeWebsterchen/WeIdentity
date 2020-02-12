@@ -43,6 +43,7 @@ import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.constant.WeIdConstant;
 import com.webank.weid.exception.WeIdBaseException;
 import com.webank.weid.protocol.base.EvidenceInfo;
+import com.webank.weid.protocol.base.EvidenceSignInfo;
 import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.base.WeIdDocument;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -91,49 +92,6 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
         return hashToNewEvidence(hashResp.getResult(), weIdPrivateKey.getPrivateKey(), null);
     }
 
-    /**
-     * Create a new evidence with multiple signers to blockchain, and return the evidence address
-     * on-chain. This allows multiple WeIDs to be declared as signers. Here, one signer must provide
-     * his/her private key to create evidence. The rest of signers can append their signature via
-     * AddSignature() in future.
-     *
-     * @param object the given Java object
-     * @param signers declared signers WeID
-     * @param weIdPrivateKey the signer WeID's private key - must belong to one of the signers
-     * @return evidence address. Return empty string if failed due to any reason.
-     */
-    @Override
-    public ResponseData<String> createEvidence(Hashable object, List<String> signers,
-        WeIdPrivateKey weIdPrivateKey) {
-        if (signers == null || signers.size() == 0) {
-            return createEvidence(object, weIdPrivateKey);
-        }
-        for (String signer : signers) {
-            if (!WeIdUtils.isWeIdValid(signer)) {
-                return new ResponseData<>(StringUtils.EMPTY, ErrorCode.WEID_INVALID);
-            }
-        }
-        ResponseData<String> hashResp = getHashValue(object);
-        if (StringUtils.isEmpty(hashResp.getResult())) {
-            return new ResponseData<>(StringUtils.EMPTY, hashResp.getErrorCode(),
-                hashResp.getErrorMessage());
-        }
-        if (!WeIdUtils.isPrivateKeyValid(weIdPrivateKey)) {
-            return new ResponseData<>(StringUtils.EMPTY,
-                ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS);
-        }
-        // remove duplicates in the signers list
-        Set<String> hashSet = new LinkedHashSet<>(signers);
-        signers.clear();
-        signers.addAll(hashSet);
-        String signer = getSignerFromPrivKey(signers, weIdPrivateKey.getPrivateKey());
-        if (StringUtils.isEmpty(signer)) {
-            return new ResponseData<>(StringUtils.EMPTY,
-                ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS);
-        }
-        return hashToNewEvidence(hashResp.getResult(), weIdPrivateKey.getPrivateKey(), signers);
-    }
-
     private String getSignerFromPrivKey(List<String> signers, String privateKey) {
         ECKeyPair keyPair = ECKeyPair.create(new BigInteger(privateKey));
         String keyWeId = WeIdUtils
@@ -144,114 +102,6 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
             }
         }
         return StringUtils.EMPTY;
-    }
-
-    /**
-     * Add new signatures to an existing evidence to increase its credibility. Succeeds only if the
-     * sender is one of the signer WeID defined in this evidence.
-     *
-     * @param object the given Java object
-     * @param evidenceAddress the evidence address on chain
-     * @param weIdPrivateKey the signer WeID's private key
-     * @return true if succeed, false otherwise
-     */
-    @Override
-    public ResponseData<Boolean> addSignature(Hashable object, String evidenceAddress,
-        WeIdPrivateKey weIdPrivateKey) {
-        ResponseData<String> hashResp = getHashValue(object);
-        if (StringUtils.isEmpty(hashResp.getResult())) {
-            return new ResponseData<>(false, hashResp.getErrorCode(), hashResp.getErrorMessage());
-        }
-        if (!WeIdUtils.isPrivateKeyValid(weIdPrivateKey)) {
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS);
-        }
-        if (StringUtils.isEmpty(evidenceAddress) || !WeIdUtils.isValidAddress(evidenceAddress)) {
-            logger.error("Evidence argument illegal input: address. ");
-            return new ResponseData<>(null, ErrorCode.ILLEGAL_INPUT);
-        }
-        EvidenceInfo eviInfo = getEvidence(evidenceAddress).getResult();
-        if (eviInfo == null || StringUtils.isEmpty(eviInfo.getCredentialHash()) || !eviInfo
-            .getCredentialHash().equalsIgnoreCase(hashResp.getResult())) {
-            return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
-        }
-        List<String> onChainSignerAddrs = eviInfo.getSigners();
-        String privateKey = weIdPrivateKey.getPrivateKey();
-        String signerAddr =
-            WeIdUtils.convertAddressToWeId(
-                Keys.getAddress(ECKeyPair.create(new BigInteger(privateKey))));
-        if (!onChainSignerAddrs.contains(signerAddr)) {
-            return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
-        }
-        Sign.SignatureData sigData = DataToolUtils.signMessage(hashResp.getResult(), privateKey);
-        try {
-            return evidenceServiceEngine.addSignature(sigData, privateKey, evidenceAddress);
-        } catch (Exception e) {
-            logger.error("create evidence failed due to system error. ", e);
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR);
-        }
-    }
-
-    /**
-     * Set a hash value to an empty evidence and append the signature. Note that if the evidence
-     * already has a valid non-empty hash value, this will always fail. Empty evidence can be
-     * created via invoking createEvidence() with a null passed-in object.
-     *
-     * @param hashValue the hash value
-     * @param evidenceAddress the evidence address on chain
-     * @param weIdPrivateKey the signer WeID's private key
-     * @return true if succeed, false otherwise
-     */
-    @Override
-    public ResponseData<Boolean> setHashValue(String hashValue, String evidenceAddress,
-        WeIdPrivateKey weIdPrivateKey) {
-        if (!verifyHashValueFormat(hashValue)) {
-            return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
-        }
-        if (!WeIdUtils.isPrivateKeyValid(weIdPrivateKey)) {
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS);
-        }
-        if (StringUtils.isEmpty(evidenceAddress) || !WeIdUtils.isValidAddress(evidenceAddress)) {
-            logger.error("Evidence argument illegal input: address. ");
-            return new ResponseData<>(null, ErrorCode.ILLEGAL_INPUT);
-        }
-        String onChainHash = getEvidence(evidenceAddress).getResult().getCredentialHash();
-        if (!StringUtils.isEmpty(onChainHash)) {
-            logger.error("On Chain hash value is not empty, canceling.");
-            return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
-        }
-        String credentialHashOnChain = hashValue
-            .replaceAll(WeIdConstant.HEX_PREFIX, StringUtils.EMPTY);
-        List<String> hashAttributes = new ArrayList<>();
-        hashAttributes.add(
-            credentialHashOnChain.substring(0, WeIdConstant.BYTES32_FIXED_LENGTH));
-        hashAttributes.add(
-            credentialHashOnChain.substring(
-                WeIdConstant.BYTES32_FIXED_LENGTH,
-                WeIdConstant.BYTES32_FIXED_LENGTH * 2
-            ));
-        String privateKey = weIdPrivateKey.getPrivateKey();
-        try {
-            ResponseData<Boolean> innerResp = evidenceServiceEngine
-                .setHashValue(hashAttributes, privateKey, evidenceAddress);
-            if (!innerResp.getResult()) {
-                return innerResp;
-            }
-        } catch (Exception e) {
-            logger.error("create evidence failed due to system error. ", e);
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR);
-        }
-        onChainHash = getEvidence(evidenceAddress).getResult().getCredentialHash();
-        if (!onChainHash.equalsIgnoreCase(hashValue)) {
-            logger.error("Failed to update hash on chain for unknown reasons.");
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR);
-        }
-        Sign.SignatureData sigData = DataToolUtils.signMessage(hashValue, privateKey);
-        try {
-            return evidenceServiceEngine.addSignature(sigData, privateKey, evidenceAddress);
-        } catch (Exception e) {
-            logger.error("create evidence failed due to system error. ", e);
-            return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR);
-        }
     }
 
     /* (non-Javadoc)
@@ -528,4 +378,41 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
         return !StringUtils.isEmpty(hashValue)
             && Pattern.compile(WeIdConstant.HASH_VALUE_PATTERN).matcher(hashValue).matches();
     }
+
+    /**
+     * Validate whether an evidence is signed by this WeID.
+     *
+     * @param evidenceInfo the evidence info fetched from chain
+     * @param weId the WeID
+     * @return true if yes, false otherwise
+     */
+    @Override
+    public ResponseData<Boolean> validateSigner(EvidenceInfo evidenceInfo, String weId) {
+        if (evidenceInfo == null || evidenceInfo.getSigners().isEmpty()) {
+            return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
+        }
+        if (WeIdUtils.isWeIdValid(weId)) {
+            return new ResponseData<>(false, ErrorCode.WEID_INVALID);
+        }
+        if (!evidenceInfo.getSigners().contains(weId)) {
+            logger.error("This Evidence does not contain the provided WeID: {}", weId);
+            return new ResponseData<>(false, ErrorCode.WEID_DOES_NOT_EXIST);
+        }
+        EvidenceSignInfo signInfo = evidenceInfo.getSignInfo().get(weId);
+        String signature = signInfo.getSignature();
+        if (!DataToolUtils.isValidBase64String(signature)) {
+            return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_SIGNATURE_BROKEN);
+        }
+        SignatureData signatureData =
+            DataToolUtils.simpleSignatureDeserialization(
+                DataToolUtils.base64Decode(signature.getBytes(StandardCharsets.UTF_8))
+            );
+        return verifySignatureToSigner(
+            evidenceInfo.getCredentialHash(),
+            WeIdUtils.convertAddressToWeId(weId),
+            signatureData
+        );
+    }
+
+
 }

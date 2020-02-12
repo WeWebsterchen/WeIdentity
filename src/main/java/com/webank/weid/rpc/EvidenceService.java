@@ -35,60 +35,16 @@ import com.webank.weid.protocol.response.ResponseData;
 public interface EvidenceService {
 
     /**
-     * Create a new evidence to blockchain, and return the evidence address on-chain. Supports
-     * following types of input: Credential, CredentialWrapper, CredentialPojo, plain hash value.
-     * This also supports to create an empty evidence if the passed-in object is null. Afterwards,
-     * setHashValue() must be called to set a valid hash value.
+     * Create a new evidence to blockchain, and return the evidence's hash value on-chain. Supports
+     * following types of input: Credential, CredentialWrapper, CredentialPojo, plain hash String,
+     * After a successful creation, the hash value will be recorded onto blockchain, and this hash
+     * value can be used as key to lookup on blockchain.
      *
      * @param object the given Java object
      * @param weIdPrivateKey the signer WeID's private key
      * @return evidence address. Return empty string if failed due to any reason.
      */
     ResponseData<String> createEvidence(Hashable object, WeIdPrivateKey weIdPrivateKey);
-
-    /**
-     * Create a new evidence with multiple signers to blockchain, and return the evidence address
-     * on-chain. Supports following types input: Credential, CredentialWrapper, CredentialPojo, and
-     * plain hash value. This allows multiple WeIDs to be declared as signers. Here, one signer must
-     * provide his/her private key to create evidence. The rest of signers can append their
-     * signature via AddSignature() in future. This also supports to create an empty evidence if the
-     * passed-in object is null.
-     *
-     * @param object the given Java object
-     * @param signers declared signers WeID
-     * @param weIdPrivateKey the signer WeID's private key - must belong to one of the signers
-     * @return evidence address. Return empty string if failed due to any reason.
-     */
-    @Deprecated
-    ResponseData<String> createEvidence(Hashable object, List<String> signers,
-        WeIdPrivateKey weIdPrivateKey);
-
-    /**
-     * Add new signatures to an existing evidence to increase its credibility. Supports following
-     * types of input: Credential, CredentialWrapper, CredentialPojo, and plain hash value. Succeeds
-     * if and only if the sender is one of the signer WeID defined in this evidence.
-     *
-     * @param object the given Java object
-     * @param evidenceAddress the evidence address on chain
-     * @param weIdPrivateKey the signer WeID's private key
-     * @return true if succeed, false otherwise
-     */
-    @Deprecated
-    ResponseData<Boolean> addSignature(Hashable object, String evidenceAddress,
-        WeIdPrivateKey weIdPrivateKey);
-
-    /**
-     * Set a hash value to an empty evidence, and append a valid signature. Note that if the
-     * evidence already has a valid hash value, this will always fail. Empty evidence can be created
-     * via invoking createEvidence() with a null passed-in object.
-     *
-     * @param hashValue the hash value
-     * @param evidenceAddress the evidence address on chain
-     * @param weIdPrivateKey the signer WeID's private key
-     * @return true if succeed, false otherwise
-     */
-    ResponseData<Boolean> setHashValue(String hashValue, String evidenceAddress,
-        WeIdPrivateKey weIdPrivateKey);
 
     /**
      * Get the evidence from blockchain.
@@ -121,9 +77,9 @@ public interface EvidenceService {
     /**
      * Validate whether an evidence is signed by this WeID.
      *
-     * @param evidenceKey the evidence key - can be hash, address, or UUID
+     * @param evidenceInfo the evidence info fetched from chain
      * @param weId the WeID
      * @return true if yes, false otherwise
      */
-    ResponseData<Boolean> validateSigner(String evidenceKey, String weId);
+    ResponseData<Boolean> validateSigner(EvidenceInfo evidenceInfo, String weId);
 }
