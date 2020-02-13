@@ -19,6 +19,9 @@
 
 package com.webank.weid.protocol.base;
 
+import java.util.List;
+import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -44,5 +47,5 @@ public class EvidenceSignInfo {
     /**
      * The extra value this signer records on chain.
      */
-    private String extraValue;
+    private Map<String, String> extraValue;
 }

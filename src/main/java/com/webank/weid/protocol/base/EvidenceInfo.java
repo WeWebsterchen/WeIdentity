@@ -45,11 +45,6 @@ public class EvidenceInfo {
     private Map<String, EvidenceSignInfo> signInfo = new HashMap<>();
 
     /**
-     * Optional: Referring Credential ID.
-     */
-    private String credentialId;
-
-    /**
      * Get all signers info.
      *
      * @return signers list
@@ -73,31 +68,5 @@ public class EvidenceInfo {
             signatures.add(entry.getValue().getSignature());
         }
         return signatures;
-    }
-
-    /**
-     * Get all timestamps info.
-     *
-     * @return timestamps list
-     */
-    public List<String> getTimestamps() {
-        List<String> timestamps = new ArrayList<>();
-        for (Map.Entry<String, EvidenceSignInfo> entry : signInfo.entrySet()) {
-            timestamps.add(entry.getValue().getTimestamp());
-        }
-        return timestamps;
-    }
-
-    /**
-     * Get all extra values info.
-     *
-     * @return extra info list
-     */
-    public List<String> getExtraValues() {
-        List<String> extraValues = new ArrayList<>();
-        for (Map.Entry<String, EvidenceSignInfo> entry : signInfo.entrySet()) {
-            extraValues.add(entry.getValue().getExtraValue());
-        }
-        return extraValues;
     }
 }

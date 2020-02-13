@@ -19,8 +19,6 @@
 
 package com.webank.weid.rpc;
 
-import java.util.List;
-
 import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -42,28 +40,22 @@ public interface EvidenceService {
      *
      * @param object the given Java object
      * @param weIdPrivateKey the signer WeID's private key
-     * @return evidence address. Return empty string if failed due to any reason.
+     * @param extra (optional) the extra value
+     * @return evidence hash value. Return empty string if failed due to any reason.
      */
-    ResponseData<String> createEvidence(Hashable object, WeIdPrivateKey weIdPrivateKey);
+    ResponseData<String> createEvidence(
+        Hashable object,
+        WeIdPrivateKey weIdPrivateKey,
+        String extra
+    );
 
     /**
-     * Get the evidence from blockchain.
+     * Get the evidence info from blockchain.
      *
-     * @param evidenceKey the evidence address (legacy), or hash, on chain
+     * @param evidenceKey the hash, on chain
      * @return The EvidenceInfo
      */
     ResponseData<EvidenceInfo> getEvidence(String evidenceKey);
-
-    /**
-     * Verify an object based against the provided Evidence info. Supports following types of input:
-     * Credential, CredentialWrapper, CredentialPojo, and plain hash value. This will traverse all
-     * the listed signatures against its singers.
-     *
-     * @param object the given Java object
-     * @param evidenceKey the evidence key to be verified
-     * @return true if succeeds, false otherwise
-     */
-    ResponseData<Boolean> verify(Hashable object, String evidenceKey);
 
     /**
      * Generate hash value of any passed-in param.

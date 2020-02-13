@@ -42,6 +42,7 @@ import com.webank.weid.contract.v2.CommitteeMemberController;
 import com.webank.weid.contract.v2.CommitteeMemberData;
 import com.webank.weid.contract.v2.CptController;
 import com.webank.weid.contract.v2.CptData;
+import com.webank.weid.contract.v2.EvidenceContract;
 import com.webank.weid.contract.v2.EvidenceFactory;
 import com.webank.weid.contract.v2.RoleController;
 import com.webank.weid.contract.v2.SpecificIssuerController;
@@ -118,6 +119,7 @@ public class DeployContractV2 extends DeployContract {
             );
         }
         deployEvidenceContracts();
+        deployEvidenceContractsNew();
     }
 
     private static String deployRoleControllerContracts() {
@@ -322,6 +324,7 @@ public class DeployContractV2 extends DeployContract {
         return issuerAddressList;
     }
 
+    @Deprecated
     private static String deployEvidenceContracts() {
         if (web3j == null) {
             initWeb3j();
@@ -338,6 +341,26 @@ public class DeployContractV2 extends DeployContract {
             return evidenceFactoryAddress;
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             logger.error("EvidenceFactory deploy exception", e);
+        } catch (Exception e) {
+            logger.error("EvidenceFactory deploy exception", e);
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private static String deployEvidenceContractsNew() {
+        if (web3j == null) {
+            initWeb3j();
+        }
+        try {
+            EvidenceContract evidenceContract =
+                EvidenceContract.deploy(
+                    web3j,
+                    credentials,
+                    new StaticGasProvider(WeIdConstant.GAS_PRICE, WeIdConstant.GAS_LIMIT)
+                ).send();
+            String evidenceContractAddress = evidenceContract.getContractAddress();
+            writeAddressToFile(evidenceContractAddress, "evidenceController.address");
+            return evidenceContractAddress;
         } catch (Exception e) {
             logger.error("EvidenceFactory deploy exception", e);
         }

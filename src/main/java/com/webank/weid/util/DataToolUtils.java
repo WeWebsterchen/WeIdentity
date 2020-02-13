@@ -252,6 +252,20 @@ public final class DataToolUtils {
     }
 
     /**
+     * Convert a private key to its default WeID.
+     *
+     * @param privateKey the pass-in privatekey
+     * @return
+     */
+    public static String convertPrivateKeyToDefaultWeId(String privateKey) {
+        org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair
+            .create(new BigInteger(privateKey));
+        return WeIdUtils
+            .convertAddressToWeId(new org.fisco.bcos.web3j.abi.datatypes.Address(
+                org.fisco.bcos.web3j.crypto.Keys.getAddress(keyPair)).toString());
+    }
+
+    /**
      * deserialize a JSON String to an class instance.
      *
      * @param json json string
