@@ -21,10 +21,12 @@ package com.webank.weid.service.impl;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -81,6 +83,12 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
      */
     @Override
     public ResponseData<String> createEvidence(Hashable object, WeIdPrivateKey weIdPrivateKey) {
+        return createEvidence(object, weIdPrivateKey, null);
+    }
+
+    @Override
+    public ResponseData<String> createEvidence(Hashable object, WeIdPrivateKey weIdPrivateKey,
+        Map<String, String> extra) {
         ResponseData<String> hashResp = getHashValue(object);
         if (StringUtils.isEmpty(hashResp.getResult())) {
             return new ResponseData<>(StringUtils.EMPTY, hashResp.getErrorCode(),
@@ -90,7 +98,17 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
             return new ResponseData<>(StringUtils.EMPTY,
                 ErrorCode.CREDENTIAL_PRIVATE_KEY_NOT_EXISTS);
         }
-        return hashToNewEvidence(hashResp.getResult(), weIdPrivateKey.getPrivateKey());
+        String extraValue = StringUtils.EMPTY;
+        if (extra != null && !extra.isEmpty()) {
+            try {
+                extraValue = URLEncoder.encode(DataToolUtils.stringMapToCompactJson(extra),
+                    StandardCharsets.UTF_8.name());
+            } catch (Exception e) {
+                logger.error("extra value illegal: {}", extra.toString());
+                return new ResponseData<>(StringUtils.EMPTY, ErrorCode.ILLEGAL_INPUT);
+            }
+        }
+        return hashToNewEvidence(hashResp.getResult(), weIdPrivateKey.getPrivateKey(), extraValue);
     }
 
     /* (non-Javadoc)
@@ -170,22 +188,23 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
      *
      * @param hashValue the hash value to be uploaded
      * @param privateKey the private key to reload contract and sign txn
+     * @param extra the extra value (compact json formatted blob)
      */
-    private ResponseData<String> hashToNewEvidence(String hashValue, String privateKey, String extra) {
+    private ResponseData<String> hashToNewEvidence(String hashValue, String privateKey,
+        String extra) {
         try {
             Sign.SignatureData sigData =
                 DataToolUtils.signMessage(hashValue, privateKey);
             String signature = new String(
                 DataToolUtils.base64Encode(DataToolUtils.simpleSignatureSerialization(sigData)),
                 StandardCharsets.UTF_8);
-            EvidenceSignInfo info = new EvidenceSignInfo();
-            info.setSignature(signature);
-            info.setTimestamp(DateUtils.getNoMillisecondTimeStampString());
-            info.setSigner(DataToolUtils.convertPrivateKeyToDefaultWeId(privateKey));
-            info.setExtraValue(extra);
+            Long timestamp = DateUtils.getNoMillisecondTimeStamp();
             return evidenceServiceEngine.createEvidence(
-                ,
-
+                hashValue,
+                signature,
+                extra,
+                timestamp,
+                privateKey
             );
         } catch (Exception e) {
             logger.error("create evidence failed due to system error. ", e);
@@ -238,11 +257,6 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
             logger.error("error occurred during verifying signatures from chain: ", e);
             return new ResponseData<>(false, ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR);
         }
-    }
-
-    private boolean verifyHashValueFormat(String hashValue) {
-        return !StringUtils.isEmpty(hashValue)
-            && Pattern.compile(WeIdConstant.HASH_VALUE_PATTERN).matcher(hashValue).matches();
     }
 
     /**

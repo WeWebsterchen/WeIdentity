@@ -67,87 +67,15 @@ public class EvidenceServiceEngineV1 extends BaseEngine implements EvidenceServi
 
     private static final Logger logger = LoggerFactory.getLogger(EvidenceServiceEngineV1.class);
 
-    /**
-     * Create evidence in 1.x FISCO-BCOS.
-     *
-     * @param sigData signature Data
-     * @param hashAttributes hash value
-     * @param extraValueList extra value
-     * @param privateKey private key
-     * @param signerList declared signers
-     * @return evidence address
-     */
     @Override
     public ResponseData<String> createEvidence(
-        Sign.SignatureData sigData,
-        List<String> hashAttributes,
-        List<String> extraValueList,
-        String privateKey,
-        List<String> signerList
+        String hashValue,
+        String signature,
+        String extra,
+        Long timestamp,
+        String privateKey
     ) {
-
-        try {
-            Bytes32 r = DataToolUtils.bytesArrayToBytes32(sigData.getR());
-            Bytes32 s = DataToolUtils.bytesArrayToBytes32(sigData.getS());
-            Uint8 v = DataToolUtils.intToUnt8(Integer.valueOf(sigData.getV()));
-            List<Address> signer = new ArrayList<>();
-            if (signerList == null || signerList.size() == 0) {
-                // Evidence has only one signer - default to be the WeID behind the private key
-                ECKeyPair keyPair = ECKeyPair.create(new BigInteger(privateKey));
-                signer.add(new Address(Keys.getAddress(keyPair)));
-            } else {
-                // Evidence has a pre-defined signer list
-                for (String signerWeId : signerList) {
-                    signer.add(new Address(WeIdUtils.convertWeIdToAddress(signerWeId)));
-                }
-            }
-            EvidenceFactory evidenceFactory =
-                reloadContract(
-                    fiscoConfig.getEvidenceAddress(),
-                    privateKey,
-                    EvidenceFactory.class
-                );
-            Future<TransactionReceipt> future = evidenceFactory.createEvidence(
-                new DynamicArray<Bytes32>(generateBytes32List(hashAttributes)),
-                new DynamicArray<Address>(signer),
-                r,
-                s,
-                v,
-                new DynamicArray<Bytes32>(generateBytes32List(extraValueList))
-            );
-
-            TransactionReceipt receipt = future.get(
-                WeIdConstant.TRANSACTION_RECEIPT_TIMEOUT,
-                TimeUnit.SECONDS);
-            TransactionInfo info = new TransactionInfo(receipt);
-            List<CreateEvidenceLogEventResponse> eventResponseList =
-                EvidenceFactory.getCreateEvidenceLogEvents(receipt);
-            CreateEvidenceLogEventResponse event = eventResponseList.get(0);
-
-            if (event != null) {
-                ErrorCode innerResponse =
-                    verifyCreateEvidenceEvent(
-                        event.retCode.getValue().intValue(),
-                        event.addr.toString()
-                    );
-                if (ErrorCode.SUCCESS.getCode() != innerResponse.getCode()) {
-                    return new ResponseData<>(StringUtils.EMPTY, innerResponse, info);
-                }
-                return new ResponseData<>(event.addr.toString(), ErrorCode.SUCCESS, info);
-            } else {
-                logger.error(
-                    "create evidence failed due to transcation event decoding failure."
-                );
-                return new ResponseData<>(StringUtils.EMPTY,
-                    ErrorCode.CREDENTIAL_EVIDENCE_BASE_ERROR, info);
-            }
-        } catch (TimeoutException e) {
-            logger.error("create evidence failed due to system timeout. ", e);
-            return new ResponseData<>(StringUtils.EMPTY, ErrorCode.TRANSACTION_TIMEOUT);
-        } catch (InterruptedException | ExecutionException e) {
-            logger.error("create evidence failed due to transaction error. ", e);
-            return new ResponseData<>(StringUtils.EMPTY, ErrorCode.TRANSACTION_EXECUTE_ERROR);
-        }
+        return null;
     }
 
     private List<Bytes32> generateBytes32List(List<String> bytes32List) {

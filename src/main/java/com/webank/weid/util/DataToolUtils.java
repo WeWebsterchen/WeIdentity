@@ -52,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -255,7 +256,7 @@ public final class DataToolUtils {
      * Convert a private key to its default WeID.
      *
      * @param privateKey the pass-in privatekey
-     * @return
+     * @return true if yes, false otherwise
      */
     public static String convertPrivateKeyToDefaultWeId(String privateKey) {
         org.fisco.bcos.web3j.crypto.ECKeyPair keyPair = org.fisco.bcos.web3j.crypto.ECKeyPair
@@ -263,6 +264,16 @@ public final class DataToolUtils {
         return WeIdUtils
             .convertAddressToWeId(new org.fisco.bcos.web3j.abi.datatypes.Address(
                 org.fisco.bcos.web3j.crypto.Keys.getAddress(keyPair)).toString());
+    }
+
+    /**
+     * Check whether the String is a valid hash.
+     * @param hashValue hash in String
+     * @return true if yes, false otherwise
+     */
+    public static boolean isHashValid(String hashValue) {
+        return !StringUtils.isEmpty(hashValue)
+            && Pattern.compile(WeIdConstant.HASH_VALUE_PATTERN).matcher(hashValue).matches();
     }
 
     /**
@@ -346,6 +357,18 @@ public final class DataToolUtils {
      * @throws Exception IOException
      */
     public static String mapToCompactJson(Map<String, Object> map) throws Exception {
+        return OBJECT_MAPPER.readTree(serialize(map)).toString();
+    }
+
+    /**
+     * Convert a Map to compact Json output, with keys ordered. Use Jackson JsonNode toString() to
+     * ensure key order and compact output.
+     *
+     * @param map input map
+     * @return JsonString
+     * @throws Exception IOException
+     */
+    public static String stringMapToCompactJson(Map<String, String> map) throws Exception {
         return OBJECT_MAPPER.readTree(serialize(map)).toString();
     }
 

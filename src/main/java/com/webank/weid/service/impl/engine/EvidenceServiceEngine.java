@@ -19,10 +19,6 @@
 
 package com.webank.weid.service.impl.engine;
 
-import java.util.List;
-
-import org.bcos.web3j.crypto.Sign;
-
 import com.webank.weid.constant.ErrorCode;
 import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.response.ResponseData;
@@ -30,11 +26,11 @@ import com.webank.weid.protocol.response.ResponseData;
 public interface EvidenceServiceEngine {
 
     ResponseData<String> createEvidence(
-        Sign.SignatureData sigData,
-        List<String> hashAttributes,
-        List<String> extraValueList,
-        String privateKey,
-        List<String> signerWeIdList
+        String hashValue,
+        String signature,
+        String extra,
+        Long timestamp,
+        String privateKey
     );
 
     ResponseData<EvidenceInfo> getInfo(String evidenceAddress);

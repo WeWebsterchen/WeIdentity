@@ -544,8 +544,6 @@ public class TestCreateEvidence extends TestBaseServcie {
         EvidenceInfo sdEvi = evidenceService.getEvidence(sdAddr).getResult();
         Assert.assertTrue(
             originalEvi.getCredentialHash().equalsIgnoreCase(sdEvi.getCredentialHash()));
-        Assert.assertTrue(evidenceService.verify(originalCredential, originalAddr).getResult());
-        Assert.assertTrue(evidenceService.verify(sdCredential, sdAddr).getResult());
     }
 
 
@@ -574,8 +572,6 @@ public class TestCreateEvidence extends TestBaseServcie {
         EvidenceInfo sdEvi = evidenceService.getEvidence(sdAddr).getResult();
         Assert.assertTrue(
             originalEvi.getCredentialHash().equalsIgnoreCase(sdEvi.getCredentialHash()));
-        Assert.assertTrue(evidenceService.verify(tempCredential, originalAddr).getResult());
-        Assert.assertTrue(evidenceService.verify(credentialWrapper, sdAddr).getResult());
     }
 
     /**

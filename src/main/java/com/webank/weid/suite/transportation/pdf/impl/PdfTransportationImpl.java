@@ -1012,54 +1012,54 @@ public class PdfTransportationImpl
             //验证存证逻辑
             HashString checkSum = new HashString(getChecksum(pdfTransportation));
             String address = pdfBaseData.getAddress();
-            ResponseData<Boolean> resVerify = evidenceService
-                    .verify(checkSum, address);
-            if (resVerify.getResult() == null || !resVerify.getResult()) {
-                logger.info("Evidence verify fail.");
-                return new ResponseData<>(
-                        null,
-                        ErrorCode.getTypeByErrorCode(resVerify.getErrorCode()));
-            }
-
-            //创建编解码实体对象并对pdfBaseData中的数据进行解码
-            EncodeData encodeData = new EncodeData(
-                    pdfBaseData.getId(),
-                    pdfBaseData.getOrgId(),
-                    String.valueOf(pdfBaseData.getData()),
-                    super.getWeIdAuthentication()
-            );
-
-            //根据编解码类型获取编解码枚举对象
-            EncodeType encodeType =
-                    EncodeType.getObject(String.valueOf(pdfBaseData.getEncodeType()));
-
-            if (encodeType == null) {
-                return new ResponseData<>(null, ErrorCode.TRANSPORTATION_PROTOCOL_ENCODE_ERROR);
-            }
-            logger.info("decode by {}.", encodeType.name());
-
-            //解码
-            String presentationEStr =
-                    EncodeProcessorFactory
-                            .getEncodeProcessor(encodeType)
-                            .decode(encodeData);
-
-            String presentationEJson = DataToolUtils.convertUtcToTimestamp(presentationEStr);
-            String presentationEJsonNew = presentationEJson;
-            if (DataToolUtils.isValidFromToJson(presentationEJson)) {
-                presentationEJsonNew = DataToolUtils.removeTagFromToJson(presentationEJson);
-            }
-            T object;
-            Method method = getFromJsonMethod(clazz);
-            if (method == null) {
-                //调用工具的反序列化
-                object = (T) DataToolUtils.deserialize(presentationEJsonNew, clazz);
-            } else {
-                object = (T) method.invoke(null, presentationEJsonNew);
-            }
+//            ResponseData<Boolean> resVerify = evidenceService
+//                    .verify(checkSum, address);
+//            if (resVerify.getResult() == null || !resVerify.getResult()) {
+//                logger.info("Evidence verify fail.");
+//                return new ResponseData<>(
+//                        null,
+//                        ErrorCode.getTypeByErrorCode(resVerify.getErrorCode()));
+//            }
+//
+//            //创建编解码实体对象并对pdfBaseData中的数据进行解码
+//            EncodeData encodeData = new EncodeData(
+//                    pdfBaseData.getId(),
+//                    pdfBaseData.getOrgId(),
+//                    String.valueOf(pdfBaseData.getData()),
+//                    super.getWeIdAuthentication()
+//            );
+//
+//            //根据编解码类型获取编解码枚举对象
+//            EncodeType encodeType =
+//                    EncodeType.getObject(String.valueOf(pdfBaseData.getEncodeType()));
+//
+//            if (encodeType == null) {
+//                return new ResponseData<>(null, ErrorCode.TRANSPORTATION_PROTOCOL_ENCODE_ERROR);
+//            }
+//            logger.info("decode by {}.", encodeType.name());
+//
+//            //解码
+//            String presentationEStr =
+//                    EncodeProcessorFactory
+//                            .getEncodeProcessor(encodeType)
+//                            .decode(encodeData);
+//
+//            String presentationEJson = DataToolUtils.convertUtcToTimestamp(presentationEStr);
+//            String presentationEJsonNew = presentationEJson;
+//            if (DataToolUtils.isValidFromToJson(presentationEJson)) {
+//                presentationEJsonNew = DataToolUtils.removeTagFromToJson(presentationEJson);
+//            }
+//            T object;
+//            Method method = getFromJsonMethod(clazz);
+//            if (method == null) {
+//                //调用工具的反序列化
+//                object = (T) DataToolUtils.deserialize(presentationEJsonNew, clazz);
+//            } else {
+//                object = (T) method.invoke(null, presentationEJsonNew);
+//            }
 
             logger.info("PdfTransportationImpl deserialization finished.");
-            return new ResponseData<>(object, ErrorCode.SUCCESS);
+            return new ResponseData<>(null, ErrorCode.SUCCESS);
         } catch (WeIdBaseException e) {
             logger.error("[deserialize] PdfTransportation deserialize due to base error.", e);
             return new ResponseData<>(null, e.getErrorCode());
@@ -1410,16 +1410,16 @@ public class PdfTransportationImpl
             WeIdAuthentication weIdAuthentication,
             byte[] pdfFileByte) throws Exception {
 
-        ResponseData<Boolean> setEvidenceRes = evidenceService
-                .setHashValue(
-                        getChecksum(pdfFileByte),
-                        evidenceAddress.getResult(),
-                        weIdAuthentication.getWeIdPrivateKey());
-        if (setEvidenceRes.getResult() == null || !setEvidenceRes.getResult()) {
-            logger.error("SetHashValue error.");
-            throw new WeIdBaseException(
-                    ErrorCode.getTypeByErrorCode(setEvidenceRes.getErrorCode()));
-        }
+//        ResponseData<Boolean> setEvidenceRes = evidenceService
+//                .setHashValue(
+//                        getChecksum(pdfFileByte),
+//                        evidenceAddress.getResult(),
+//                        weIdAuthentication.getWeIdPrivateKey());
+//        if (setEvidenceRes.getResult() == null || !setEvidenceRes.getResult()) {
+//            logger.error("SetHashValue error.");
+//            throw new WeIdBaseException(
+//                    ErrorCode.getTypeByErrorCode(setEvidenceRes.getErrorCode()));
+//        }
     }
 
     private File createFileByPath(String outputPdfFilePath) {

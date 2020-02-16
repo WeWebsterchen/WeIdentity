@@ -19,6 +19,8 @@
 
 package com.webank.weid.rpc;
 
+import java.util.Map;
+
 import com.webank.weid.protocol.base.EvidenceInfo;
 import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
@@ -40,14 +42,22 @@ public interface EvidenceService {
      *
      * @param object the given Java object
      * @param weIdPrivateKey the signer WeID's private key
-     * @param extra (optional) the extra value
      * @return evidence hash value. Return empty string if failed due to any reason.
+     */
+    ResponseData<String> createEvidence(Hashable object, WeIdPrivateKey weIdPrivateKey);
+
+    /**
+     * Create a new evidence together with uploaded extra values.
+     *
+     * @param object the given Java object
+     * @param weIdPrivateKey the signer WeID's private key
+     * @param extra the extra value blob
+     * @return evidence hash value
      */
     ResponseData<String> createEvidence(
         Hashable object,
         WeIdPrivateKey weIdPrivateKey,
-        String extra
-    );
+        Map<String, String> extra);
 
     /**
      * Get the evidence info from blockchain.
