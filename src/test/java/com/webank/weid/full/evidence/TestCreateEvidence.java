@@ -20,9 +20,7 @@
 package com.webank.weid.full.evidence;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +41,6 @@ import com.webank.weid.protocol.base.Credential;
 import com.webank.weid.protocol.base.CredentialPojo;
 import com.webank.weid.protocol.base.CredentialWrapper;
 import com.webank.weid.protocol.base.EvidenceInfo;
-import com.webank.weid.protocol.base.HashString;
 import com.webank.weid.protocol.base.WeIdPrivateKey;
 import com.webank.weid.protocol.response.CreateWeIdDataResult;
 import com.webank.weid.protocol.response.ResponseData;
@@ -75,12 +72,84 @@ public class TestCreateEvidence extends TestBaseServcie {
     public void testCreateEvidence_success() {
         CreateWeIdDataResult tempCreateWeIdResultWithSetAttr =
             super.copyCreateWeId(createWeIdResultWithSetAttr);
-        ResponseData<String> response = evidenceService
-            .createEvidence(credential, tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey());
-        LogUtil.info(logger, "createEvidence", response);
+        String hash = evidenceService.generateHash(credential).getResult().getHash();
+        System.out.println(hash);
+        Map<String, String> extraMap = new HashMap<>();
+        extraMap.put("credentialId", "1144225");
+        ResponseData<String> response = evidenceService.createEvidence(credential,
+            tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey(), extraMap);
+        String signerWeId = tempCreateWeIdResultWithSetAttr.getWeId();
 
         Assert.assertEquals(ErrorCode.SUCCESS.getCode(), response.getErrorCode().intValue());
         Assert.assertTrue(!response.getResult().isEmpty());
+        ResponseData<EvidenceInfo> eviInfo = evidenceService.getEvidence(hash);
+        EvidenceInfo evidenceInfo = eviInfo.getResult();
+        Assert.assertTrue(evidenceInfo.getCredentialHash().equalsIgnoreCase(hash));
+        Assert.assertTrue(evidenceInfo.getSigners().contains(signerWeId));
+        Assert.assertFalse(evidenceInfo.getSignInfo().get(signerWeId).getExtraValue().isEmpty());
+        ResponseData<Boolean> resp = evidenceService.verifySigner(evidenceInfo, signerWeId);
+        Assert.assertTrue(resp.getResult());
+    }
+
+    @Test
+    public void testCreateEvidence_MultipleSigners() {
+        CreateWeIdDataResult tempCreateWeIdResultWithSetAttr =
+            super.copyCreateWeId(createWeIdResultWithSetAttr);
+        String hash = evidenceService.generateHash(credential).getResult().getHash();
+        Map<String, String> extraMap = new HashMap<>();
+        extraMap.put("credentialId", "1144225");
+        ResponseData<String> response = evidenceService
+            .createEvidence(credential, tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey(),
+                extraMap);
+        CreateWeIdDataResult tempCreateWeIdResultWithSetAttr2 = createWeIdWithSetAttr();
+        extraMap.put("temprecord", "abcabc");
+        ResponseData<String> response2 = evidenceService.createEvidence(credential,
+            tempCreateWeIdResultWithSetAttr2.getUserWeIdPrivateKey(), extraMap);
+        Assert.assertTrue(response.getResult().equalsIgnoreCase(response2.getResult()));
+        Assert.assertTrue(response.getResult().equalsIgnoreCase(hash));
+        Assert.assertTrue(response.getErrorCode().equals(ErrorCode.SUCCESS.getCode())
+            && response2.getErrorCode().equals(ErrorCode.SUCCESS.getCode()));
+        ResponseData<EvidenceInfo> eviInfo = evidenceService.getEvidence(hash);
+        EvidenceInfo evidenceInfo = eviInfo.getResult();
+        Assert.assertTrue(
+            evidenceInfo.getSigners().contains(tempCreateWeIdResultWithSetAttr.getWeId())
+                && evidenceInfo.getSigners().contains(tempCreateWeIdResultWithSetAttr2.getWeId()));
+        Assert.assertEquals(evidenceInfo.getSignInfo()
+            .get(tempCreateWeIdResultWithSetAttr.getWeId()).getExtraValue().size(), 1);
+        Assert.assertEquals(evidenceInfo.getSignInfo()
+            .get(tempCreateWeIdResultWithSetAttr2.getWeId()).getExtraValue().size(), 2);
+        Assert.assertTrue(evidenceService.verifySigner(evidenceInfo,
+            tempCreateWeIdResultWithSetAttr.getWeId()).getResult());
+        Assert.assertTrue(evidenceService.verifySigner(evidenceInfo,
+            tempCreateWeIdResultWithSetAttr2.getWeId()).getResult());
+    }
+
+    @Test
+    public void testCreateEvidence_SignMultipleTimesWithMultipleMapValues() {
+        CreateWeIdDataResult tempCreateWeIdResultWithSetAttr = createWeIdWithSetAttr();
+        String hash = evidenceService.generateHash(credential).getResult().getHash();
+        Map<String, String> extraMap = new HashMap<>();
+        extraMap.put("credentialId", "aab-ccd");
+        ResponseData<String> response = evidenceService.createEvidence(credential,
+            tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey(), extraMap);
+        String signerWeId = tempCreateWeIdResultWithSetAttr.getWeId();
+        Assert.assertEquals(ErrorCode.SUCCESS.getCode(), response.getErrorCode().intValue());
+        extraMap.put("credentialId", "11223344");
+        extraMap.put("my name is", "dummy dull");
+        ResponseData<String> response2 = evidenceService.createEvidence(credential,
+            tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey(), extraMap);
+        Assert.assertEquals(ErrorCode.SUCCESS.getCode(), response2.getErrorCode().intValue());
+        extraMap = new HashMap<>();
+        extraMap.put("slashId", "A0519872");
+        evidenceService.createEvidence(credential,
+            tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey(), extraMap);
+        ResponseData<EvidenceInfo> eviInfo = evidenceService.getEvidence(hash);
+        EvidenceInfo evidenceInfo = eviInfo.getResult();
+        Assert.assertEquals(evidenceInfo.getSignInfo().get(signerWeId).getExtraValue().size(), 3);
+        Assert.assertTrue(evidenceInfo.getSignInfo().get(signerWeId).getExtraValue().
+            get("credentialId").equalsIgnoreCase("11223344"));
+        Assert.assertTrue(evidenceService.verifySigner(evidenceInfo,
+            tempCreateWeIdResultWithSetAttr.getWeId()).getResult());
     }
 
     /**
@@ -152,30 +221,6 @@ public class TestCreateEvidence extends TestBaseServcie {
         Assert.assertFalse(!response.getResult().isEmpty());
     }
 
-    /**
-     * case8: createEvidence immutability - multiple invocations lead to different addresses.
-     */
-    @Test
-    public void testCreateEvidence_theSameRequestHasDifferentAddress() {
-        CreateWeIdDataResult tempCreateWeIdResultWithSetAttr = super.copyCreateWeId(createWeIdNew);
-        ResponseData<String> response = evidenceService
-            .createEvidence(credential, tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey());
-        LogUtil.info(logger, "createEvidence", response);
-
-        Assert.assertEquals(
-            ErrorCode.SUCCESS.getCode(),
-            response.getErrorCode().intValue());
-        Assert.assertTrue(!response.getResult().isEmpty());
-
-        ResponseData<String> response1 = evidenceService
-            .createEvidence(credential, tempCreateWeIdResultWithSetAttr.getUserWeIdPrivateKey());
-        LogUtil.info(logger, "createEvidence", response);
-
-        Assert.assertEquals(
-            ErrorCode.SUCCESS.getCode(),
-            response.getErrorCode().intValue());
-        Assert.assertFalse(response.getResult().equalsIgnoreCase(response1.getResult()));
-    }
 
     /**
      * case9: privateKey is not exist.

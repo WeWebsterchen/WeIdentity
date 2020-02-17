@@ -271,7 +271,7 @@ public final class DataToolUtils {
      * @param hashValue hash in String
      * @return true if yes, false otherwise
      */
-    public static boolean isHashValid(String hashValue) {
+    public static boolean isValidHash(String hashValue) {
         return !StringUtils.isEmpty(hashValue)
             && Pattern.compile(WeIdConstant.HASH_VALUE_PATTERN).matcher(hashValue).matches();
     }

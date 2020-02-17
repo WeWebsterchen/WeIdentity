@@ -77,11 +77,11 @@ public interface EvidenceService {
     <T> ResponseData<HashString> generateHash(T object);
 
     /**
-     * Validate whether an evidence is signed by this WeID.
+     * Validate whether an evidence is signed by this WeID - will perform on-Chain key check.
      *
      * @param evidenceInfo the evidence info fetched from chain
      * @param weId the WeID
      * @return true if yes, false otherwise
      */
-    ResponseData<Boolean> validateSigner(EvidenceInfo evidenceInfo, String weId);
+    ResponseData<Boolean> verifySigner(EvidenceInfo evidenceInfo, String weId);
 }

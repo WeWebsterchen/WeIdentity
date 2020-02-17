@@ -220,7 +220,7 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
      */
     @Override
     public ResponseData<EvidenceInfo> getEvidence(String evidenceKey) {
-        if (StringUtils.isEmpty(evidenceKey)) {
+        if (!DataToolUtils.isValidHash(evidenceKey)) {
             logger.error("Evidence argument illegal input: evidence hash. ");
             return new ResponseData<>(null, ErrorCode.ILLEGAL_INPUT);
         }
@@ -267,11 +267,11 @@ public class EvidenceServiceImpl extends BaseService implements EvidenceService 
      * @return true if yes, false otherwise
      */
     @Override
-    public ResponseData<Boolean> validateSigner(EvidenceInfo evidenceInfo, String weId) {
+    public ResponseData<Boolean> verifySigner(EvidenceInfo evidenceInfo, String weId) {
         if (evidenceInfo == null || evidenceInfo.getSigners().isEmpty()) {
             return new ResponseData<>(false, ErrorCode.ILLEGAL_INPUT);
         }
-        if (WeIdUtils.isWeIdValid(weId)) {
+        if (!WeIdUtils.isWeIdValid(weId)) {
             return new ResponseData<>(false, ErrorCode.WEID_INVALID);
         }
         if (!evidenceInfo.getSigners().contains(weId)) {

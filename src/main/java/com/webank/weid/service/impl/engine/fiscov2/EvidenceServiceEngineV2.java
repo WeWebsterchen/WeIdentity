@@ -234,29 +234,30 @@ public class EvidenceServiceEngineV2 extends BaseEngine implements EvidenceServi
                 response.setResolveEventLogStatus(ResolveEventLogStatus.STATUS_RES_NULL);
                 return response;
             }
-            if (!hash.equalsIgnoreCase(new String(event.hash, StandardCharsets.UTF_8))) {
+            if (!hash.equalsIgnoreCase(event.hash)) {
                 response.setResolveEventLogStatus(ResolveEventLogStatus.STATUS_KEY_NOT_MATCH);
                 return response;
             }
+            String signerWeId = WeIdUtils.convertAddressToWeId(event.signer);
             if (isSignEvent(event)) {
                 // higher block sig will be overwritten anyway - any new one will be accepted
                 EvidenceSignInfo signInfo = new EvidenceSignInfo();
                 signInfo.setSignature(event.value);
                 signInfo.setTimestamp(String.valueOf(event.updated.longValue()));
-                if (evidenceInfo.getSignInfo().containsKey(event.signer)) {
+                if (evidenceInfo.getSignInfo().containsKey(signerWeId)) {
                     signInfo.setExtraValue(
-                        evidenceInfo.getSignInfo().get(event.signer).getExtraValue());
+                        evidenceInfo.getSignInfo().get(signerWeId).getExtraValue());
                 }
-                evidenceInfo.getSignInfo().put(event.signer, signInfo);
+                evidenceInfo.getSignInfo().put(signerWeId, signInfo);
             }
             if (isExtraEvent(event)) {
                 // higher block blob will overwrite existing one - any new one will be abandoned
                 EvidenceSignInfo signInfo = new EvidenceSignInfo();
-                if (evidenceInfo.getSignInfo().containsKey(event.signer)) {
+                if (evidenceInfo.getSignInfo().containsKey(signerWeId)) {
                     signInfo.setSignature(
-                        evidenceInfo.getSignInfo().get(event.signer).getSignature());
+                        evidenceInfo.getSignInfo().get(signerWeId).getSignature());
                     signInfo.setTimestamp(
-                        evidenceInfo.getSignInfo().get(event.signer).getTimestamp());
+                        evidenceInfo.getSignInfo().get(signerWeId).getTimestamp());
                 } else {
                     signInfo.setSignature(StringUtils.EMPTY);
                     signInfo.setTimestamp(StringUtils.EMPTY);
@@ -270,16 +271,19 @@ public class EvidenceServiceEngineV2 extends BaseEngine implements EvidenceServi
                     response.setResolveEventLogStatus(ResolveEventLogStatus.STATUS_KEY_NOT_MATCH);
                     return response;
                 }
-                Map<String, String> oldBlob = evidenceInfo.getSignInfo().get(event.signer)
+                Map<String, String> oldBlob = evidenceInfo.getSignInfo().get(signerWeId)
                     .getExtraValue();
+                if (oldBlob == null || oldBlob.isEmpty()) {
+                    oldBlob = new HashMap<>();
+                }
                 // Iterate each key in the new blob. If it is already in the old one, abandon.
-                for (String key : newBlob.keySet()) {
-                    if (!oldBlob.containsKey(key)) {
-                        oldBlob.put(key, newBlob.get(key));
+                for (Map.Entry<String, String> entry : newBlob.entrySet()) {
+                    if (!oldBlob.containsKey(entry.getKey())) {
+                        oldBlob.put(entry.getKey(), entry.getValue());
                     }
                 }
                 signInfo.setExtraValue(oldBlob);
-                evidenceInfo.getSignInfo().put(event.signer, signInfo);
+                evidenceInfo.getSignInfo().put(signerWeId, signInfo);
             }
             previousBlock = event.previousBlock.intValue();
         }
